@@ -1,8 +1,9 @@
-# Swift FirmCore Decomposition on Billion-scale Multilayer Graphs
+# Resource-Efficient FirmCore Decomposition on Billion-scale Multilayer Graphs (under review)
 
 ## Abstract
 
-Multilayer (ML) graphs offer a convenient paradigm for modeling complex node-to-node interactions, such as social or semantic connections, as layers of a graph. FirmCore decomposition aims to identify groups of nodes with strong ties across layers to support clustering and community detection in ML graphs. Yet, the best FirmCore decomposition algorithm requires hours of computation on large graphs with millions of nodes and billions of edges, hindering its applicability in practical scenarios. To overcome this, we propose a novel list-based structure, FC-List, to boost the efficiency of FirmCore decomposition by exploiting redundancies in the computation of progressively smaller cores. Since the list-based structure is naturally amenable to parallelism, we introduce three new parallel algorithms on multi-core CPU, ParList, ParCore, and ParHybrid. We further leverage GPU architecture and propose a novel GPU solution ParCore-GPU to further boost the efficiency. In extensive experiments on 12 datasets, FC-List achieves 9x speedup on average in the serial version and more than two orders of magnitude improvement in the parallel version and memory footprint reduction up to 28.5x compared to existing methods. Furthermore, our GPU algorithm gains over three orders of magnitude speedup. Applied to the challenging NP-hard densest subgraph mining in ML graphs, our algorithms achieve up to 436x speedup.
+
+Multilayer (ML) graphs offer a convenient paradigm for modeling complex node-to-node interactions, such as social or semantic connections, as layers of a graph. In such graphs, FirmCore decomposition represents a convenient technique to identify cohesive groups of nodes with strong ties across layers. Unfortunately, the fastest FirmCore decomposition method fails to fully harness the resources leading to thread underutilization and idle threads. Our main observation is that FirmCores enjoy a grid structure we call fcgrid, which we exploit to distribute work among threads in our work: we introduce serial and parallel algorithms for multi-core CPUs, as well as the first GPU-based algorithm. Owing to our new structural design, our solutions show greatly improved performance and resource utilization. Our experiments on 12 datasets show 9× speedup on average for our serial version fcgrid compared to existing serial methods. Furthermore, our parallel algorithm achieves an average 197.8× speedup over the state-of-the-art parallel algorithm. For the challenging NP-hard densest subgraph mining problem in ML graphs, our algorithms achieve 15× speedup on average.
 
 
 ## Compile the code
@@ -34,16 +35,12 @@ dataset(-d):
 
 method(-m):
 
-- lmdlist ($\lambda$-list)
-- klist ($k$-list)
-- fclist (FC-List)
-- ParCore (ParCore algorithm)
-- ParList (ParList)
+- lpe (SerGrid with LPE traversal order)
+- dpe (SerGrid with DPE traversal order)
+- ParGrid (ParCore algorithm)
+- ParGridPlus (ParGridPlus)
 - CoreIndex (Baseline)
 - ParCoreIndex (parallel version of CoreIndex Baseline)
-- hybrid (Combine ParCore and ParList)
-- CoreMem (ParCore with memory saving strategy)
-- WdsList (densest subgraph mining)
 
 num of thread (-num_thread)
 
@@ -59,8 +56,8 @@ Order of layer (-o)
 
 ## example
 
-To run the homo dataset with ParCore algorithm with 2 threads.
+To run the hw1 dataset with ParGrid algorithm with 2 threads.
 
 ```
-./firmcore_baseline -d homo -m ParCore -num_thread 2
+./firmcore_baseline -d hw1 -m ParGrid -num_thread 2
 ```

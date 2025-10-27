@@ -41,10 +41,10 @@ void FCSyncLeft::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, co
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); 
     int *cnts = new int[n_vertex];
-    memset(cnts, 0, sizeof(int)*n_vertex);
+    // memset(cnts, 0, sizeof(int)*n_vertex);
     
     
-    #pragma omp parallel shared(cnts, valid, degs) num_threads(40)
+    #pragma omp parallel shared(cnts, valid, degs)  num_threads(40)
     {
 
         uint **adj_lst;
@@ -53,14 +53,15 @@ void FCSyncLeft::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, co
 
         int start = 0, end = 0;
         int cnt = 0;
-        // int chunk_size = n_vertex;
+        int chunk_size = n_vertex/10;
 
-        #pragma omp for schedule(dynamic, 1000)
+        #pragma omp for schedule(dynamic, 512)
+        // #pragma omp for schedule(guided, 2048) nowait
         for(int v = 0; v < n_vertex; v ++){
             cnt = 0;
             if(valid[v] == 0){
                  cnts[v] = 0;
-                continue; // only process the valid vertex
+                 continue; // only process the valid vertex
             } 
             for(int l = 0; l < n_layers; l ++){
                 cnt += (degs[v][l] >= k); 
@@ -73,7 +74,6 @@ void FCSyncLeft::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, co
             }else{
                 cnts[v] = cnt;   
             }
-
         }
 
         #pragma omp barrier
@@ -91,8 +91,8 @@ void FCSyncLeft::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, co
                     auto originDeg = __sync_fetch_and_sub(&degs[u][l], 1);
                     if(originDeg == k){
                         auto originCnt = __sync_fetch_and_sub(&cnts[u], 1);
-                        if(originCnt == lmd && valid[u] == 1){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
-                            valid[u] = 0;
+                        // valid[u] == 1){
+                        if(originCnt == lmd && __sync_bool_compare_and_swap(&valid[u], 1, 0)){
                             cnts[u] = 0;
                             buff[end++] = u;
                        }
@@ -236,7 +236,7 @@ void FCSyncLeft::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd,
     memset(cnts, 0, sizeof(int)*n_vertex);
     
     
-    #pragma omp parallel shared(cnts, valid, degs) num_threads(8)
+    #pragma omp parallel shared(cnts, valid, degs) num_threads(3)
     {
 
         uint **adj_lst;
@@ -283,8 +283,7 @@ void FCSyncLeft::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd,
                     auto originDeg = __sync_fetch_and_sub(&degs[u][l], 1);
                     if(originDeg == k){
                         auto originCnt = __sync_fetch_and_sub(&cnts[u], 1);
-                        if(originCnt == lmd && valid[u] == 1){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
-                            valid[u] = 0;
+                        if(originCnt == lmd && __sync_bool_compare_and_swap(&valid[u], 1, 0)){
                             cnts[u] = 0;
                             buff[end++] = u;
                        }
