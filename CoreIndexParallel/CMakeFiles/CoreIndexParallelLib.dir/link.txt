@@ -1,0 +1,2 @@
+/usr/bin/ar qc libCoreIndexParallelLib.a CMakeFiles/CoreIndexParallelLib.dir/CoreIndex.cpp.o
+/usr/bin/ranlib libCoreIndexParallelLib.a

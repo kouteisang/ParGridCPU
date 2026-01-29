@@ -8,7 +8,7 @@ FCSyncRight::~FCSyncRight(){
 }
 
 
-void FCSyncRight::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vertex, uint n_layer, bool* valid, uint** degs, int total, bool serial){
+void FCSyncRight::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vertex, uint n_layer, bool* valid, int** degs, int total, bool serial){
         
     node->k = k;
     node->lmd = lmd;
@@ -29,24 +29,31 @@ void FCSyncRight::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_ve
     // cout << "node->k = " << node->k << " node->lmd = " << node->lmd << " node->length = " << node->length << endl;
 
     if(serial){
-        node->degs = new uint*[n_vertex];
+        node->degs = new int*[n_vertex];
         for(uint v = 0; v < n_vertex; v ++){
-            node->degs[v] = new uint[n_layer];
-            memcpy(node->degs[v], degs[v], n_layer * sizeof(uint));
+            node->degs[v] = new int[n_layer];
+            memcpy(node->degs[v], degs[v], n_layer * sizeof(int));
         }
     }
 
 }
 
-void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total){
+void FCSyncRight::PeelSync(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, UtilStats& stats){
+    
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); 
     int *cnts = new int[n_vertex];
     memset(cnts, 0, sizeof(int)*n_vertex);
+      
+    double sum_core = 0.0;
+    double t_par0 = omp_get_wtime();
+    int P = 0;
     
-    
-    #pragma omp parallel shared(cnts, valid, degs) num_threads(32)
+    #pragma omp parallel shared(cnts, valid, degs) num_threads(20)
     {
+
+        P = omp_get_num_threads();
+        double local_core = 0.0;
 
         uint **adj_lst;
         int buff_size = n_vertex;
@@ -54,8 +61,8 @@ void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, c
 
         int start = 0, end = 0;
         int cnt = 0;
-        // int chunk_size = n_vertex;
 
+        double t0 = omp_get_wtime();
         #pragma omp for schedule(dynamic, 1000)
         for(int v = 0; v < n_vertex; v ++){
             cnt = 0;
@@ -76,10 +83,11 @@ void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, c
             }
 
         }
-
+        double t1 = omp_get_wtime();
+        local_core += (t1 - t0);
         #pragma omp barrier
         // printf("Thread %d removed node end = %d\n", omp_get_thread_num(), end);
-
+        double t2 = omp_get_wtime();
         while(start < end){
             int vv = buff[start];
             start ++;
@@ -87,14 +95,12 @@ void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, c
                 adj_lst = mg.GetGraph(l).GetAdjLst();
                 for(uint i = 1; i <= adj_lst[vv][0]; i ++){
                     uint u = adj_lst[vv][i]; // the neighbourhood
-                    if(valid[u] == 0) continue; // only process if u is valid
+                    // if(valid[u] == 0) continue; // only process if u is valid
                     //  // minus one and return the old value
                     auto originDeg = __sync_fetch_and_sub(&degs[u][l], 1);
                     if(originDeg == k){
                         auto originCnt = __sync_fetch_and_sub(&cnts[u], 1);
-                        if(originCnt == lmd && valid[u] == 1){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
-                            valid[u] = 0;
-                            cnts[u] = 0;
+                        if(originCnt == lmd && __sync_bool_compare_and_swap(&valid[u], 1, 0)){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
                             buff[end++] = u;
                        }
                     }
@@ -103,7 +109,17 @@ void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, c
         }
         __sync_fetch_and_add(&total, end);
         free(buff);
+        double t3 = omp_get_wtime();
+        local_core += (t3 - t2);
+        sum_core += local_core;
     }
+
+    double t_par1 = omp_get_wtime();
+    double T_par_wall = t_par1 - t_par0;    
+    
+    stats.total_core     += sum_core;
+    stats.total_capacity += (double)P * T_par_wall;
+    stats.calls++;
 
     if(total < n_vertex){
         constructCoreSync(node, k, lmd, n_vertex, n_layers, valid, degs, total, serial);
@@ -114,43 +130,43 @@ void FCSyncRight::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, c
 }
 
 
-void FCSyncRight::PathSerialSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total){
+void FCSyncRight::PathSerialSync(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, UtilStats& stats){
 
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); // number of layer
     
-    PeelSync(mg, degs, k, lmd, node, valid, serial, total);
+    PeelSync(mg, degs, k, lmd, node, valid, serial, total, stats);
  
     // means the (k, lambda)-constaint has the valid vertex
      if(node->length > 0){
         k += 1;
         coreNodeP* leftChild = new coreNodeP();
         node->left = leftChild;
-        PathSerialSync(mg, degs, k, lmd, leftChild, valid, serial, total);
+        PathSerialSync(mg, degs, k, lmd, leftChild, valid, serial, total, stats);
      }else{
         node->left = nullptr;
      }
  }
  
 
-void FCSyncRight::PathByK(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total){
+void FCSyncRight::PathByK(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total,UtilStats& stats){
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); // number of layer
     
 
-    PeelSync(mg, degs, k, lmd, node, valid, false, total);
+    PeelSync(mg, degs, k, lmd, node, valid, false, total, stats);
 
     // means the (k, lambda)-constaint has the valid vertex
     if(node->length > 0){
         lmd += 1;
         coreNodeP* rightChild = new coreNodeP();
         node->right = rightChild;
-        PathByK(mg, degs, k, lmd, rightChild, node->valid, total);
+        PathByK(mg, degs, k, lmd, rightChild, node->valid, total, stats);
     }
 
 } 
 
-void FCSyncRight::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, uint **degs, uint *klmd, coreNodeP* node, bool* valid, int& total){
+void FCSyncRight::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, int **degs, uint *klmd, coreNodeP* node, bool* valid, int& total, UtilStats& stats){
     
     uint k = klmd[0];
     uint lmd = klmd[1];
@@ -159,7 +175,7 @@ void FCSyncRight::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, uint
     uint n_vertex = mg.GetN(); // number of vertex
 
     auto start_time_serial = omp_get_wtime(); 
-    PathSerialSync(mg, degs, k, lmd, node, valid, 1, total);
+    PathSerialSync(mg, degs, k, lmd, node, valid, 1, total, stats);
     auto end_time_serial = omp_get_wtime(); 
 
     double elapsed_time_serial = end_time_serial - start_time_serial;
@@ -173,7 +189,7 @@ void FCSyncRight::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, uint
 
         coreNodeP* rightChild = new coreNodeP();
         root->right = rightChild;
-        PathByK(mg, root->degs, root->k, root->lmd+1, rightChild, root->valid, root->total); 
+        PathByK(mg, root->degs, root->k, root->lmd+1, rightChild, root->valid, root->total, stats); 
 
         root = root->left;
     }
@@ -182,22 +198,25 @@ void FCSyncRight::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, uint
 
 void FCSyncRight::Execute(MultilayerGraph &mg, FCCoreTree &tree){
 
+    UtilStats peel_util;
+    
     coreNodeP* node = tree.getNode();
     int count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
     bool* valid = new bool[n_vertex]; // 1 is valid
     int total = 0;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
         // Parallel init the degree and valid part
     #pragma omp parallel
     {
         #pragma omp for schedule(static)
         for(int v = 0; v < n_vertex; v ++){
-                degs[v] = new uint[n_layers];
+                degs[v] = new int[n_layers];
             //  valid[v] = true; // 1 is valid
         } 
 
@@ -216,7 +235,10 @@ void FCSyncRight::Execute(MultilayerGraph &mg, FCCoreTree &tree){
     klmd[0] = 1; // k
     klmd[1] = 1; // lmds
 
-    BuildSubFCTreeSync(tree, mg, degs, klmd, node, valid, total);
+    BuildSubFCTreeSync(tree, mg, degs, klmd, node, valid, total, peel_util);
+
+    double U_overall = peel_util.total_core / peel_util.total_capacity;
+    cout << "U_overall = " << U_overall*100 << " % " << endl;
     
      // Free the memory
     for (uint i = 0; i < n_vertex; i++) delete[] degs[i];
@@ -229,15 +251,21 @@ void FCSyncRight::Execute(MultilayerGraph &mg, FCCoreTree &tree){
 // ========== The following are mix strategy==========
 
 
-void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total){
+void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, UtilStats& stats){
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); 
     int *cnts = new int[n_vertex];
     memset(cnts, 0, sizeof(int)*n_vertex);
     
+    double sum_core = 0.0;
+    double t_par0 = omp_get_wtime();
+    int P = 0;
     
     #pragma omp parallel shared(cnts, valid, degs) num_threads(2)
     {
+
+        P = omp_get_num_threads();
+        double local_core = 0.0;
 
         uint **adj_lst;
         int buff_size = n_vertex;
@@ -247,6 +275,7 @@ void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd
         int cnt = 0;
         int chunk_size = (n_vertex) / (80);
 
+        double t0 = omp_get_wtime();
         #pragma omp for schedule(dynamic, chunk_size)
         for(int v = 0; v < n_vertex; v ++){
             cnt = 0;
@@ -267,10 +296,11 @@ void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd
             }
 
         }
-
+        double t1 = omp_get_wtime();
+        local_core += (t1 - t0);
         #pragma omp barrier
         // printf("Thread %d removed node end = %d\n", omp_get_thread_num(), end);
-
+        double t2 = omp_get_wtime();
         while(start < end){
             int vv = buff[start];
             start ++;
@@ -283,9 +313,7 @@ void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd
                     auto originDeg = __sync_fetch_and_sub(&degs[u][l], 1);
                     if(originDeg == k){
                         auto originCnt = __sync_fetch_and_sub(&cnts[u], 1);
-                        if(originCnt == lmd && valid[u] == 1){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
-                            valid[u] = 0;
-                            cnts[u] = 0;
+                        if(originCnt == lmd && __sync_bool_compare_and_swap(&valid[u], 1, 0)){//__sync_bool_compare_and_swap(&valid[u], 1, 0)){
                             buff[end++] = u;
                        }
                     }
@@ -294,7 +322,19 @@ void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd
         }
         __sync_fetch_and_add(&total, end);
         free(buff);
+        double t3 = omp_get_wtime();
+        local_core += (t3 - t2);
+        sum_core += local_core;
     }
+
+    double t_par1 = omp_get_wtime();
+    double T_par_wall = t_par1 - t_par0;    
+    
+    stats.total_core     += sum_core;
+    stats.total_capacity += (double)P * T_par_wall;
+    stats.calls++;
+
+    
 
     if(total < n_vertex){
         constructCoreSync(node, k, lmd, n_vertex, n_layers, valid, degs, total, serial);
@@ -304,24 +344,24 @@ void FCSyncRight::PeelSyncMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd
    
 }
 
-void FCSyncRight::PathByKMix(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total){
+void FCSyncRight::PathByKMix(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total, UtilStats& stats){
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); // number of layer
     
 
-    PeelSyncMix(mg, degs, k, lmd, node, valid, false, total);
+    PeelSyncMix(mg, degs, k, lmd, node, valid, false, total, stats);
 
     // means the (k, lambda)-constaint has the valid vertex
     if(node->length > 0){
         lmd += 1;
         coreNodeP* rightChild = new coreNodeP();
         node->right = rightChild;
-        PathByKMix(mg, degs, k, lmd, rightChild, node->valid, total);
+        PathByKMix(mg, degs, k, lmd, rightChild, node->valid, total, stats);
     }
 
 } 
 
-void FCSyncRight::BuildSubFCTreeSyncMix(FCCoreTree &tree, MultilayerGraph &mg, uint **degs, uint *klmd, coreNodeP* node, bool* valid, int& total){
+void FCSyncRight::BuildSubFCTreeSyncMix(FCCoreTree &tree, MultilayerGraph &mg, int **degs, uint *klmd, coreNodeP* node, bool* valid, int& total, UtilStats& stats){
     
     uint k = klmd[0];
     uint lmd = klmd[1];
@@ -330,7 +370,7 @@ void FCSyncRight::BuildSubFCTreeSyncMix(FCCoreTree &tree, MultilayerGraph &mg, u
     uint n_vertex = mg.GetN(); // number of vertex
 
     auto start_time_serial = omp_get_wtime(); 
-    PathSerialSync(mg, degs, k, lmd, node, valid, 1, total);
+    PathSerialSync(mg, degs, k, lmd, node, valid, 1, total, stats);
     auto end_time_serial = omp_get_wtime(); 
 
     double elapsed_time_serial = end_time_serial - start_time_serial;
@@ -350,7 +390,7 @@ void FCSyncRight::BuildSubFCTreeSyncMix(FCCoreTree &tree, MultilayerGraph &mg, u
                 {
                     coreNodeP* rightChild = new coreNodeP();
                     thisNode->right = rightChild;
-                    PathByKMix(mg, thisNode->degs, thisNode->k+1, thisNode->lmd, rightChild, thisNode->valid, thisNode->total); 
+                    PathByKMix(mg, thisNode->degs, thisNode->k+1, thisNode->lmd, rightChild, thisNode->valid, thisNode->total, stats); 
                 }
                 root = root->left;
             }
@@ -363,22 +403,26 @@ void FCSyncRight::BuildSubFCTreeSyncMix(FCCoreTree &tree, MultilayerGraph &mg, u
 
 void FCSyncRight::ExecuteMix(MultilayerGraph &mg, FCCoreTree &tree){
 
+    UtilStats peel_util;
+    
+
     coreNodeP* node = tree.getNode();
     int count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
     bool* valid = new bool[n_vertex]; // 1 is valid
     int total = 0;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
         // Parallel init the degree and valid part
     #pragma omp parallel
     {
         #pragma omp for schedule(static)
         for(int v = 0; v < n_vertex; v ++){
-                degs[v] = new uint[n_layers];
+                degs[v] = new int[n_layers];
             //  valid[v] = true; // 1 is valid
         } 
 
@@ -397,8 +441,11 @@ void FCSyncRight::ExecuteMix(MultilayerGraph &mg, FCCoreTree &tree){
     klmd[0] = 1; // k
     klmd[1] = 1; // lmds
 
-    BuildSubFCTreeSyncMix(tree, mg, degs, klmd, node, valid, total);
+    BuildSubFCTreeSyncMix(tree, mg, degs, klmd, node, valid, total, peel_util);
     
+    double U_overall = peel_util.total_core / peel_util.total_capacity;
+    cout << "U_overall = " << U_overall*100 << " % " << endl;
+
      // Free the memory
     for (uint i = 0; i < n_vertex; i++) delete[] degs[i];
     delete[] degs;

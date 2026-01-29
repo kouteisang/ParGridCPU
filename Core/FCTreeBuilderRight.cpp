@@ -5,7 +5,7 @@ FCTreeBuilderRight::~FCTreeBuilderRight(){
 
 // ========== Common method ==========
 
-bool FCTreeBuilderRight::check(uint **degs, uint u, uint *klmd, uint n_layers){
+bool FCTreeBuilderRight::check(int **degs, uint u, uint *klmd, uint n_layers){
     uint k = klmd[0];
     uint lmd = klmd[1];
     uint cnt = 0;
@@ -20,7 +20,7 @@ bool FCTreeBuilderRight::check(uint **degs, uint u, uint *klmd, uint n_layers){
     return false;
 }
 
-uint FCTreeBuilderRight::peel(MultilayerGraph &mg, uint **degs, uint *klmd, uint *core, uint *pos, uint s, uint e){
+uint FCTreeBuilderRight::peel(MultilayerGraph &mg, int **degs, uint *klmd, uint *core, uint *pos, uint s, uint e){
 
     uint n_layers = mg.getLayerNumber();
     uint old_s = s;
@@ -67,7 +67,7 @@ uint FCTreeBuilderRight::peel(MultilayerGraph &mg, uint **degs, uint *klmd, uint
 
 }
 
-void FCTreeBuilderRight::restore(MultilayerGraph &mg, uint **degs, uint *core, uint old_e, uint new_e){
+void FCTreeBuilderRight::restore(MultilayerGraph &mg, int **degs, uint *core, uint old_e, uint new_e){
 
     uint n_layers = mg.getLayerNumber();
     uint **adj_lst;
@@ -130,12 +130,13 @@ void FCTreeBuilderRight::Execute(MultilayerGraph &mg, FCTree &tree){
     uint count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
     for(int v = 0; v < n_vertex; v ++){
-        degs[v] = new uint[n_layers];
+        degs[v] = new int[n_layers];
         for(int l = 0; l < n_layers; l ++){
             degs[v][l] = mg.GetGraph(l).GetAdjLst()[v][0];
         }
@@ -166,7 +167,7 @@ void FCTreeBuilderRight::Execute(MultilayerGraph &mg, FCTree &tree){
    
 }
 
-void FCTreeBuilderRight::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count, coreNode* node){
+void FCTreeBuilderRight::BuildSubFCTree(MultilayerGraph &mg, int **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count, coreNode* node){
 
     uint s = e;
     uint old_e = e;
@@ -250,12 +251,13 @@ void FCTreeBuilderRight::Execute(MultilayerGraph &mg){
     uint count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
     for(int v = 0; v < n_vertex; v ++){
-        degs[v] = new uint[n_layers];
+        degs[v] = new int[n_layers];
         for(int l = 0; l < n_layers; l ++){
             degs[v][l] = mg.GetGraph(l).GetAdjLst()[v][0];
         }
@@ -285,7 +287,7 @@ void FCTreeBuilderRight::Execute(MultilayerGraph &mg){
 
 }
 
-void FCTreeBuilderRight::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count){
+void FCTreeBuilderRight::BuildSubFCTree(MultilayerGraph &mg, int **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count){
 
     uint s = e;
     uint old_e = e;

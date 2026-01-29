@@ -1,0 +1,2 @@
+/usr/bin/ar qc libCoreLib.a CMakeFiles/CoreLib.dir/FCPathLevelLeft.cpp.o CMakeFiles/CoreLib.dir/FCPathLevelRight.cpp.o CMakeFiles/CoreLib.dir/FCTreeBuilderLeft.cpp.o CMakeFiles/CoreLib.dir/FCTreeBuilderRight.cpp.o CMakeFiles/CoreLib.dir/FCTreeDFS.cpp.o CMakeFiles/CoreLib.dir/FCTree.cpp.o CMakeFiles/CoreLib.dir/FCTreeBuilderPathParallelBylmd.cpp.o CMakeFiles/CoreLib.dir/FCTreeBuilderPathParallelByk.cpp.o CMakeFiles/CoreLib.dir/FCNaive.cpp.o CMakeFiles/CoreLib.dir/FCPathMem.cpp.o
+/usr/bin/ranlib libCoreLib.a

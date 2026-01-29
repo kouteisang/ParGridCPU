@@ -215,6 +215,9 @@ void CoreIndex::Execute(MultilayerGraph &mg, ll_uint *id2vtx){
 
 
 void CoreIndex::ExecuteParallel(MultilayerGraph &mg, ll_uint *id2vtx){
+    
+    UtilStats peel_util;
+
     cout << "I am the ParCoreIndex" << endl;
     uint n_layer = mg.getLayerNumber();
     uint n_vertex = mg.GetN();
@@ -241,11 +244,17 @@ void CoreIndex::ExecuteParallel(MultilayerGraph &mg, ll_uint *id2vtx){
         }
     }
 
+    double sum_core = 0.0;
+    double t_par0 = omp_get_wtime();
+    int P = 0;
 
     // int cnt = 0;
-    #pragma omp parallel for
+    #pragma omp parallel for reduction(+:sum_core)
     for(uint lmd = 1; lmd <= n_layer; lmd ++){
 
+        P = omp_get_num_threads();
+        double t0 = omp_get_wtime();
+        double local_core = 0.0;
         // Copy the degs degree
         uint **degs_copy = new uint*[n_vertex];
         for(uint v = 0; v < n_vertex; v ++){
@@ -273,7 +282,21 @@ void CoreIndex::ExecuteParallel(MultilayerGraph &mg, ll_uint *id2vtx){
     
         // Free core array
         delete[] core;
+        double t1 = omp_get_wtime();
+        local_core += (t1 - t0);
+        sum_core += local_core;
     }
+    
+    double t_par1 = omp_get_wtime();
+    double T_par_wall = t_par1 - t_par0;
+
+    peel_util.total_core     += sum_core;
+    peel_util.total_capacity += (double)P * T_par_wall;
+    peel_util.calls++;
+
+    cout << "P = " << P << endl;
+    double U_overall = peel_util.total_core / peel_util.total_capacity;
+    cout << "U_overall = " << U_overall*100 << " % " << endl;
 
     // printf("cnt = %d\n", cnt);
 }

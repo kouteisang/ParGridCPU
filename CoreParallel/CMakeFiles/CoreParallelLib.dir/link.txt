@@ -1,0 +1,2 @@
+/usr/bin/ar qc libCoreParallelLib.a CMakeFiles/CoreParallelLib.dir/FCTreeBuilderCoreParallelByK.cpp.o CMakeFiles/CoreParallelLib.dir/FCTreeBuilderCoreParallel.cpp.o CMakeFiles/CoreParallelLib.dir/FCCoreTree.cpp.o CMakeFiles/CoreParallelLib.dir/FCSyncLeft.cpp.o CMakeFiles/CoreParallelLib.dir/FCSyncRight.cpp.o CMakeFiles/CoreParallelLib.dir/FCSyncMem.cpp.o
+/usr/bin/ranlib libCoreParallelLib.a

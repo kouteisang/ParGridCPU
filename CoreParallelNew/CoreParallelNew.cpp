@@ -5,7 +5,7 @@ CoreParallelNew::~CoreParallelNew(){
 
 }
 
-void CoreParallelNew::constructCore(coreNodeP *node, uint k, uint lmd,  uint n_vertex, uint n_layer, uint* valid, uint** degs, uint* cnts, int invalidIndex, bool serial){
+void CoreParallelNew::constructCore(coreNodeP *node, uint k, uint lmd,  uint n_vertex, uint n_layer, uint* valid, int** degs, uint* cnts, int invalidIndex, bool serial){
     
     node->k = k;
     node->lmd = lmd;
@@ -29,9 +29,9 @@ void CoreParallelNew::constructCore(coreNodeP *node, uint k, uint lmd,  uint n_v
 
     // If serial store the deg info and the invalid info
     if(serial){
-        node->degs = new uint*[n_vertex];
+        node->degs = new int*[n_vertex];
         for(uint v = 0; v < n_vertex; v ++){
-            node->degs[v] = new uint[n_layer];
+            node->degs[v] = new int[n_layer];
             memcpy(node->degs[v], degs[v], n_layer * sizeof(uint));
         }
 
@@ -42,7 +42,7 @@ void CoreParallelNew::constructCore(coreNodeP *node, uint k, uint lmd,  uint n_v
 
 }
 
-bool CoreParallelNew::PeelInvalidInParallel(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex, bool serial){
+bool CoreParallelNew::PeelInvalidInParallel(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex, bool serial){
     uint n_layers = mg.getLayerNumber(); // number of layer
     uint n_vertex = mg.GetN(); // number of vertex
     uint **adj_lst;
@@ -140,7 +140,7 @@ bool isContinue = false;
 
 }
 
-void CoreParallelNew::PathSerial(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex){
+void CoreParallelNew::PathSerial(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex){
 
     uint n_layers = mg.getLayerNumber(); // number of layer
     uint n_vertex = mg.GetN(); // number of vertex
@@ -166,7 +166,7 @@ void CoreParallelNew::PathSerial(MultilayerGraph &mg, uint **degs, uint k, uint 
 
 }
 
-void CoreParallelNew::PathLeft(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex){
+void CoreParallelNew::PathLeft(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, uint* valid, uint* cnts, int invalidIndex){
     uint n_layers = mg.getLayerNumber(); // number of layer
     uint n_vertex = mg.GetN(); // number of vertex
 
@@ -184,7 +184,7 @@ void CoreParallelNew::PathLeft(MultilayerGraph &mg, uint **degs, uint k, uint lm
     } 
 } 
 
-void CoreParallelNew::BuildSubFCTree(FCCoreTree &tree, MultilayerGraph &mg, uint **degs, uint *klmd, uint* valid, uint* cnts){
+void CoreParallelNew::BuildSubFCTree(FCCoreTree &tree, MultilayerGraph &mg, int **degs, uint *klmd, uint* valid, uint* cnts){
     uint k = klmd[0];
     uint lmd = klmd[1];
     uint n_layers = mg.getLayerNumber();
@@ -220,11 +220,12 @@ void CoreParallelNew::Execute(MultilayerGraph &mg, FCCoreTree &tree){
     uint count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
     uint* valid = new uint[n_vertex]; // 1 is valid
     uint* cnts = new uint[n_vertex];
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
 
     // Parallel init the degree and valid part
@@ -232,7 +233,7 @@ void CoreParallelNew::Execute(MultilayerGraph &mg, FCCoreTree &tree){
     {
         #pragma omp for schedule(static)
         for(int v = 0; v < n_vertex; v ++){
-             degs[v] = new uint[n_layers];
+             degs[v] = new int[n_layers];
              valid[v] = 0; // 0 is valid, others are not valid
         } 
 

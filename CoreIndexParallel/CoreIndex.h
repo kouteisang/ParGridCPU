@@ -2,7 +2,7 @@
 #define CoreIndex_H
 
 #include "Graph/MultilayerGraph.h"
-
+#include "Util/UtilStats.h"
 
 class CoreIndex
 {

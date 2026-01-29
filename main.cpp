@@ -225,23 +225,6 @@ int main(int argc, char* argv[]){
     }
 
 
-
-    // Core Parallel
-    if(method == "CoreParallel"){
-        omp_set_num_threads(num_thread);
-        auto start_time = omp_get_wtime(); 
-        FCCoreTree tree(1, 1, mg.GetN());
-        // coreNodeP* node = tree.getNode();
-        FCTreeBuilderCoreParallel::Execute(mg, tree);
-        auto end_time = omp_get_wtime(); 
-        
-        double elapsed_time = end_time - start_time;
-        std::cout << "Path left Core Parallel Elapsed time: " << elapsed_time << " seconds\n";
-
-        long double mem = GetPeakRSSInMB();
-        cout << "mem = " << mem << " MB" << endl;
-    }
-
     // Core Parallel with its own buffer
     if(method == "ParGrid"){
         omp_set_num_threads(num_thread);
@@ -258,23 +241,23 @@ int main(int argc, char* argv[]){
         long double mem = GetPeakRSSInMB();
         cout << "mem = " << mem << " MB" << endl; 
 
-        string resfilename = dataset + "-" + method + "-" + std::to_string(num_thread);
-        std::ofstream outfile(resfilename, std::ios::app); // 追加模式
-        if (outfile.is_open()) {
-            outfile << std::fixed << std::setprecision(6)
-                    << "Elapsed time: " << elapsed_time << " seconds\n"
-                    << "Memory usage: " << mem << " MB\n"
-                    << "-----------------------------\n";
-            outfile.close();
-            std::cout << "Results saved to result.txt\n";
-        } else {
-            std::cerr << "Error: unable to open result.txt\n";
-        }
+        // string resfilename = dataset + "-" + method + "-" + std::to_string(num_thread);
+        // std::ofstream outfile(resfilename, std::ios::app); // 追加模式
+        // if (outfile.is_open()) {
+        //     outfile << std::fixed << std::setprecision(6)
+        //             << "Elapsed time: " << elapsed_time << " seconds\n"
+        //             << "Memory usage: " << mem << " MB\n"
+        //             << "-----------------------------\n";
+        //     outfile.close();
+        //     std::cout << "Results saved to result.txt\n";
+        // } else {
+        //     std::cerr << "Error: unable to open result.txt\n";
+        // }
         
     }
 
         // Core Parallel with its own buffer
-    if(method == "CoreParallelSyncRight"){
+    if(method == "ParGridright"){
         omp_set_num_threads(num_thread);
         auto start_time = omp_get_wtime(); 
         FCCoreTree tree(1, 1, mg.GetN());
@@ -309,18 +292,18 @@ int main(int argc, char* argv[]){
         long double mem = GetPeakRSSInMB();
         cout << "mem = " << mem << " MB" << endl; 
 
-        string resfilename = dataset + "-2-" + method + "-" + std::to_string(num_thread);
-        std::ofstream outfile(resfilename, std::ios::app); // 追加模式
-        if (outfile.is_open()) {
-            outfile << std::fixed << std::setprecision(6)
-                    << "Elapsed time: " << elapsed_time << " seconds\n"
-                    << "Memory usage: " << mem << " MB\n"
-                    << "-----------------------------\n";
-            outfile.close();
-            std::cout << "Results saved to result.txt\n";
-        } else {
-            std::cerr << "Error: unable to open result.txt\n";
-        }
+        // string resfilename = dataset + "-2-" + method + "-" + std::to_string(num_thread);
+        // std::ofstream outfile(resfilename, std::ios::app); // 追加模式
+        // if (outfile.is_open()) {
+        //     outfile << std::fixed << std::setprecision(6)
+        //             << "Elapsed time: " << elapsed_time << " seconds\n"
+        //             << "Memory usage: " << mem << " MB\n"
+        //             << "-----------------------------\n";
+        //     outfile.close();
+        //     std::cout << "Results saved to result.txt\n";
+        // } else {
+        //     std::cerr << "Error: unable to open result.txt\n";
+        // }
     }
 
 
@@ -402,18 +385,18 @@ int main(int argc, char* argv[]){
         long double mem = GetPeakRSSInMB();
         cout << "mem = " << mem << " MB" << endl;
 
-        string resfilename = dataset + "-" + method + "-" + std::to_string(num_thread);
-        std::ofstream outfile(resfilename, std::ios::app); // 追加模式
-        if (outfile.is_open()) {
-            outfile << std::fixed << std::setprecision(6)
-                    << "Elapsed time: " << elapsed_time << " seconds\n"
-                    << "Memory usage: " << mem << " MB\n"
-                    << "-----------------------------\n";
-            outfile.close();
-            std::cout << "Results saved to result.txt\n";
-        } else {
-            std::cerr << "Error: unable to open result.txt\n";
-        }
+        // string resfilename = dataset + "-" + method + "-" + std::to_string(num_thread);
+        // std::ofstream outfile(resfilename, std::ios::app); // 追加模式
+        // if (outfile.is_open()) {
+        //     outfile << std::fixed << std::setprecision(6)
+        //             << "Elapsed time: " << elapsed_time << " seconds\n"
+        //             << "Memory usage: " << mem << " MB\n"
+        //             << "-----------------------------\n";
+        //     outfile.close();
+        //     std::cout << "Results saved to result.txt\n";
+        // } else {
+        //     std::cerr << "Error: unable to open result.txt\n";
+        // }
     }
 
     if(method == "WdsList"){
@@ -545,8 +528,6 @@ int main(int argc, char* argv[]){
         std::cout << "Elapsed time: " << retrieve_time << " seconds\n";
     }
 
-
-
     if(method == "CoreIndexTimeOffline"){
 
         auto klmd_path = "/home/cheng/fctree/klmd/"+ dataset +"_klmd.txt";
@@ -600,63 +581,5 @@ int main(int argc, char* argv[]){
         std::cout << "Elapsed time: " << retrieve_time << " seconds\n";
     }
 
-
-
-
- // Path Parallel [[deprecated]]
-    // if(method == "ParList"){
-    //     omp_set_num_threads(num_thread);
-    //     auto start_time = omp_get_wtime();
-    //     FCTree tree(1, 1, mg.GetN());
-    //     FCPathLevelLeft::Execute(mg, tree, false, beta);
-    //     auto end_time = omp_get_wtime(); 
-        
-    //     double elapsed_time = end_time - start_time;
-    //     std::cout << "PathLevelLeft Elapsed time: " << elapsed_time << " seconds\n";
-    //     long double mem = GetPeakRSSInMB();
-    //     cout << "mem = " << mem << " MB" << endl;
-    //      // This part to get the output
-    //     // std::vector<int> ks = getK("/home/cheng/fctree/dataset/s1/k.txt");
-    //     // std::vector<int> lmds = getLmd("/home/cheng/fctree/dataset/s1/lmd.txt");
-
-   
-    //     // auto start_time_query = omp_get_wtime();
-    //     // for(int i = 0; i < ks.size(); i ++){
-    //     //     uint k = uint(ks[i]);
-    //     //     uint lmd = uint(lmds[i]); 
-    //     //     coreNode* res_node = tree.getCoreByKAndLmdByRight(tree.getNode(), k, lmd);
-    //     //     // cout << res_node->k << " " << res_node->lmd << " " << res_node->length << endl;
-    //     // }
-    //     // auto end_time_query = omp_get_wtime();
-    //     // auto total_time_query = end_time_query - start_time_query;
-    //     // cout << "total time query = "<< total_time_query << endl;
-    //     // cout << "average time query = "<< total_time_query/ks.size() << endl;
-        
-    //     if(k != 0 && lmd != 0){
-    //         k = uint(k);
-    //         lmd = uint(lmd);
-    //         coreNode* res_node = tree.getCoreByKAndLmdByRight(tree.getNode(), k, lmd);
-    //         if(res_node == nullptr){
-    //             cout << "No statisfy result" << endl;
-    //         }else{
-    //             tree.saveCoreToLocal(dataset, id2vtx, res_node, "pathlmd");
-    //         }
-    //     }
-    // }
-
-
-//    // Path Parallel[[deprecated]]
-//    if(method == "ParListlRight"){
-//         omp_set_num_threads(num_thread);
-//         auto start_time = omp_get_wtime();
-//         FCTree tree(1, 1, mg.GetN());
-//         FCPathLevelRight::Execute(mg, tree);
-//         auto end_time = omp_get_wtime(); 
-        
-//         double elapsed_time = end_time - start_time;
-//         std::cout << "PathLevelRight Elapsed time: " << elapsed_time << " seconds\n";
-//         long double mem = GetPeakRSSInMB();
-//         cout << "mem = " << mem << " MB" << endl;
-//     }
 
 }

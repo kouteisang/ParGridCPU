@@ -1,0 +1,2 @@
+/usr/bin/ar qc libCoreParallelNewLib.a CMakeFiles/CoreParallelNewLib.dir/CoreParallelNew.cpp.o
+/usr/bin/ranlib libCoreParallelNewLib.a

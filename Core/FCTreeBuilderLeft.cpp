@@ -5,7 +5,7 @@ FCTreeBuilderLeft::~FCTreeBuilderLeft(){
 
 // ========== Common method ==========
 
-bool FCTreeBuilderLeft::check(uint **degs, uint u, uint *klmd, uint n_layers){
+bool FCTreeBuilderLeft::check(int **degs, uint u, uint *klmd, uint n_layers){
     uint k = klmd[0];
     uint lmd = klmd[1];
     uint cnt = 0;
@@ -20,7 +20,7 @@ bool FCTreeBuilderLeft::check(uint **degs, uint u, uint *klmd, uint n_layers){
     return false;
 }
 
-uint FCTreeBuilderLeft::peel(MultilayerGraph &mg, uint **degs, uint *klmd, uint *core, uint *pos, uint s, uint e){
+uint FCTreeBuilderLeft::peel(MultilayerGraph &mg, int **degs, uint *klmd, uint *core, uint *pos, uint s, uint e){
 
     uint n_layers = mg.getLayerNumber();
     uint old_s = s;
@@ -67,7 +67,7 @@ uint FCTreeBuilderLeft::peel(MultilayerGraph &mg, uint **degs, uint *klmd, uint 
 
 }
 
-void FCTreeBuilderLeft::restore(MultilayerGraph &mg, uint **degs, uint *core, uint old_e, uint new_e){
+void FCTreeBuilderLeft::restore(MultilayerGraph &mg, int **degs, uint *core, uint old_e, uint new_e){
 
     uint n_layers = mg.getLayerNumber();
     uint **adj_lst;
@@ -86,24 +86,29 @@ void FCTreeBuilderLeft::restore(MultilayerGraph &mg, uint **degs, uint *core, ui
     } 
 }
 
-void FCTreeBuilderLeft::PrintCoreInfor(uint *klmd, uint *core, uint new_e, uint n_vertex){
+void FCTreeBuilderLeft::PrintCoreInfor(uint *klmd, uint *core, uint new_e, uint n_vertex, int** degs, uint n_layer, long long& sum_num_of_edge_fc){
 
-    cout << "( ";
-    cout << "k=" << klmd[0] << ",";
-    cout << "lmd=" << klmd[1];
-    cout << ") len  = ";
-    cout << n_vertex - new_e;
-    // for(uint x = new_e; x < n_vertex; x ++){
-    //     cout << core[x] << " "; 
-    // }
-    cout << endl;
+    // cout << "( ";
+    // cout << "k=" << klmd[0] << ",";
+    // cout << "lmd=" << klmd[1];
+    // cout << ") len  = ";
+    // cout << n_vertex - new_e;
     
 
-    // std::ofstream outFile("/home/cheng/fctree/klmd/homo-0-5.txt", std::ios::app);
-    // if (outFile.is_open()) {
-    //     outFile << klmd[0] << " " << klmd[1] << endl;
-    // }
-    // outFile.close(); 
+    if(klmd[1] == 1){
+        long long num_of_edge_fc = 0;
+        for(int v = 0; v < n_vertex; v ++){
+            for(int l = 0; l < n_layer; l ++){
+                num_of_edge_fc += degs[v][l];
+            }
+        }
+        cout << "k = " << klmd[0] << ", ";
+        cout << "lmd = " << klmd[1] << ", ";
+        cout << "num_of_edge_fc = " << num_of_edge_fc/2 << endl;
+        sum_num_of_edge_fc += num_of_edge_fc/2;
+    }
+
+    // cout << endl;
 }
 
 void FCTreeBuilderLeft::constructCore(uint *klmd, uint *core, uint new_e, uint n_vertex, coreNode *node, coreNode *father){
@@ -161,12 +166,13 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg, FCTree &tree){
     uint count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
     for(int v = 0; v < n_vertex; v ++){
-        degs[v] = new uint[n_layers];
+        degs[v] = new int[n_layers];
         for(int l = 0; l < n_layers; l ++){
             degs[v][l] = mg.GetGraph(l).GetAdjLst()[v][0];
         }
@@ -185,9 +191,11 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg, FCTree &tree){
     klmd[0] = 1; // k
     klmd[1] = 1; // lmd
 
+    long long sum_num_of_edge_fc = 0;
     uint e = 0;
-    BuildSubFCTree(mg, degs, core, pos, klmd, e, count, node, nullptr);
+    BuildSubFCTree(mg, degs, core, pos, klmd, e, count, node, nullptr,sum_num_of_edge_fc);
 
+    cout << "sum_num_of_edge_fc = " <<  sum_num_of_edge_fc << endl;
     // Free the memory
     for (uint i = 0; i < n_vertex; i++) delete[] degs[i];
     delete[] degs;
@@ -197,7 +205,7 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg, FCTree &tree){
    
 }
 
-void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count, coreNode* node, coreNode* father){
+void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, int **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count, coreNode* node, coreNode* father, long long& sum_num_of_edge_fc){
 
     uint s = e;
     uint old_e = e;
@@ -239,7 +247,7 @@ void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *c
 
     if(n_vertex - new_e > 0){
         count ++;
-        PrintCoreInfor(klmd, core, new_e, n_vertex); 
+        PrintCoreInfor(klmd, core, new_e, n_vertex, degs, mg.getLayerNumber(), sum_num_of_edge_fc); 
         constructCore(klmd, core, new_e, n_vertex, node, father);
     }else{
         node->k = 0;
@@ -254,7 +262,7 @@ void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *c
 
         klmd[0] += 1;
         // BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, leftChild);
-        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, leftChild, node);  
+        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, leftChild, node,sum_num_of_edge_fc);  
         klmd[0] -= 1;
     }
 
@@ -265,7 +273,7 @@ void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *c
 
         klmd[1] += 1;
         // BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, rightChild);
-        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, rightChild, node);
+        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count, rightChild, node, sum_num_of_edge_fc);
         klmd[1] -= 1; 
 
     }
@@ -283,12 +291,13 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg){
     uint count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint **adj_list;
+    int **degs;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
     for(int v = 0; v < n_vertex; v ++){
-        degs[v] = new uint[n_layers];
+        degs[v] = new int[n_layers];
         for(int l = 0; l < n_layers; l ++){
             degs[v][l] = mg.GetGraph(l).GetAdjLst()[v][0];
         }
@@ -308,7 +317,9 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg){
     klmd[1] = 1; // lmd
 
     uint e = 0;
-    BuildSubFCTree(mg, degs, core, pos, klmd, e, count);
+    long long sum_num_of_edge_fc = 0;
+
+    BuildSubFCTree(mg, degs, core, pos, klmd, e, count, sum_num_of_edge_fc);
 
     // Free the memory
     for (uint i = 0; i < n_vertex; i++) delete[] degs[i];
@@ -318,7 +329,7 @@ void FCTreeBuilderLeft::Execute(MultilayerGraph &mg){
 
 }
 
-void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count){
+void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, int **degs, uint *core, uint *pos, uint *klmd, uint e, uint &count, long long& sum_num_of_edge_fc){
 
     uint s = e;
     uint old_e = e;
@@ -360,15 +371,15 @@ void FCTreeBuilderLeft::BuildSubFCTree(MultilayerGraph &mg, uint **degs, uint *c
 
     if(n_vertex - new_e > 0){
         count ++;
-        PrintCoreInfor(klmd, core, new_e, n_vertex); 
+        PrintCoreInfor(klmd, core, new_e, n_vertex, degs, mg.getLayerNumber(), sum_num_of_edge_fc); 
         klmd[0] += 1;
-        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count); 
+        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count,sum_num_of_edge_fc); 
         klmd[0] -= 1;
     }
 
     if(n_vertex - new_e > 0 && klmd[0] == 1){
         klmd[1] += 1;
-        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count);
+        BuildSubFCTree(mg, degs, core, pos, klmd, new_e, count,sum_num_of_edge_fc);
         klmd[1] -= 1; 
 
     }

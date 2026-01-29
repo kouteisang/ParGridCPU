@@ -9,7 +9,7 @@ struct coreNodeP{
     unsigned int k{0};
     unsigned int lmd{0};
     unsigned int length{0};
-    uint** degs{nullptr};
+    int** degs{nullptr};
     uint *core{nullptr}; // result core
     bool *valid{nullptr}; // valid vertex
     // std::vector<bool> valid; 

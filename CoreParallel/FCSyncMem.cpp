@@ -7,7 +7,7 @@ FCSyncMem::~FCSyncMem(){
 }
 
 
-void FCSyncMem::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vertex, uint n_layer, bool* valid, uint** degs, int total, bool serial, coreNodeP* father){
+void FCSyncMem::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vertex, uint n_layer, bool* valid, int** degs, int total, bool serial, coreNodeP* father){
         
     node->k = k;
     node->lmd = lmd;
@@ -22,10 +22,10 @@ void FCSyncMem::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vert
         // node->valid_vertex = new uint[node->length];
         node->valid_vertex.resize(node->length);
         memcpy(node->valid, valid, sizeof(bool) * n_vertex);
-        node->degs = new uint*[n_vertex];
+        node->degs = new int*[n_vertex];
         for(uint v = 0; v < n_vertex; v ++){
-            node->degs[v] = new uint[n_layer];
-            memcpy(node->degs[v], degs[v], n_layer * sizeof(uint));
+            node->degs[v] = new int[n_layer];
+            memcpy(node->degs[v], degs[v], n_layer * sizeof(int));
             if(valid[v]){
                 node->valid_vertex[cnt ++] = v;
             }
@@ -53,7 +53,7 @@ void FCSyncMem::constructCoreSync(coreNodeP *node, uint k, uint lmd, uint n_vert
 
 }
 
-void FCSyncMem::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, coreNodeP* father){
+void FCSyncMem::PeelSync(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, coreNodeP* father){
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); 
     int *cnts = new int[n_vertex];
@@ -128,7 +128,7 @@ void FCSyncMem::PeelSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, cor
 }
 
 
-void FCSyncMem::PathSerialSync(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, coreNodeP* father){
+void FCSyncMem::PathSerialSync(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, bool serial, int &total, coreNodeP* father){
 
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); // number of layer
@@ -149,7 +149,7 @@ void FCSyncMem::PathSerialSync(MultilayerGraph &mg, uint **degs, uint k, uint lm
  }
  
 
-void FCSyncMem::PathByK(MultilayerGraph &mg, uint **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total, coreNodeP *father){
+void FCSyncMem::PathByK(MultilayerGraph &mg, int **degs, uint k, uint lmd, coreNodeP* node, bool* valid, int& total, coreNodeP *father){
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber(); // number of layer
     
@@ -166,7 +166,7 @@ void FCSyncMem::PathByK(MultilayerGraph &mg, uint **degs, uint k, uint lmd, core
 
 } 
 
-void FCSyncMem::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, uint **degs, uint *klmd, coreNodeP* node, bool* valid, int& total, coreNodeP* father){
+void FCSyncMem::BuildSubFCTreeSync(FCCoreTree &tree, MultilayerGraph &mg, int **degs, uint *klmd, coreNodeP* node, bool* valid, int& total, coreNodeP* father){
     
     uint k = klmd[0];
     uint lmd = klmd[1];
@@ -202,18 +202,19 @@ void FCSyncMem::Execute(MultilayerGraph &mg, FCCoreTree &tree){
     int count = 0;
     uint n_vertex = mg.GetN(); // number of vertex
     uint n_layers = mg.getLayerNumber();
-    uint **degs, **adj_list;
+    uint  **adj_list;
+    int **degs;
     bool* valid = new bool[n_vertex]; // 1 is valid
     int total = 0;
 
-    degs = new uint*[n_vertex];
+    degs = new int*[n_vertex];
 
         // Parallel init the degree and valid part
     #pragma omp parallel
     {
         #pragma omp for schedule(static)
         for(int v = 0; v < n_vertex; v ++){
-                degs[v] = new uint[n_layers];
+                degs[v] = new int[n_layers];
             //  valid[v] = true; // 1 is valid
         } 
 
