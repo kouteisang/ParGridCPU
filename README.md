@@ -61,3 +61,8 @@ To run the hw1 dataset with ParGrid algorithm with 2 threads.
 ```
 ./firmcore_baseline -d hw1 -m ParGrid -num_thread 2
 ```
+
+## Dataset
+
+Google+ dataset used in our paper can download from https://people.duke.edu/~zg70/gplus.html
+
