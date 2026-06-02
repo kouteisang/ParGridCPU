@@ -79,3 +79,5 @@ https://law.di.unimi.it/datasets.php
 The Google+ dataset used in our paper is available at:
 
 https://people.duke.edu/~zg70/gplus.html
+
+https://drive.google.com/file/d/1HF8Q2N_hxsaQ26MarKYxZEQhqI66qAxV/view
