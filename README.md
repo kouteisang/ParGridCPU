@@ -68,7 +68,11 @@ The datasets (H) Homo, (S) Sacchcere, (F) Fao, (I) Internet, (W) Wiki, (OI) Obam
 
 https://drive.google.com/file/d/1msDDYSIC2sQODqrBjpa55yUIm15D2bda/view?usp=sharing
 
-The datasets (EM) Email-EuAll, (LJ) LiveJournal, (HW1) Hollywood-1, and (HW2) Hollywood-2 can be downloaded from:
+The datasets (EM) Email-EuAll and (LJ) LiveJournal, can be downloaded from
+
+https://snap.stanford.edu/data/index.html
+
+The datasets (HW1) Hollywood-1 and (HW2) Hollywood-2 can be downloaded from:
 
 https://law.di.unimi.it/datasets.php
 
