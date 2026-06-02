@@ -64,5 +64,14 @@ To run the hw1 dataset with ParGrid algorithm with 2 threads.
 
 ## Dataset
 
-Google+ dataset used in our paper can download from https://people.duke.edu/~zg70/gplus.html
+The datasets (H) Homo, (S) Sacchcere, (F) Fao, (I) Internet, (W) Wiki, (OI) ObamaInIsrael, (A) Amazon, (DL) DBLP-Large, (FG) FlickrGrowth, and (SO) StackOverflow are available at:
 
+https://drive.google.com/file/d/1msDDYSIC2sQODqrBjpa55yUIm15D2bda/view?usp=sharing
+
+The datasets (EM) Email-EuAll, (LJ) LiveJournal, (HW1) Hollywood-1, and (HW2) Hollywood-2 can be downloaded from:
+
+https://law.di.unimi.it/datasets.php
+
+The Google+ dataset used in our paper is available at:
+
+https://people.duke.edu/~zg70/gplus.html
