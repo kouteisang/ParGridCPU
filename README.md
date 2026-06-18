@@ -69,6 +69,8 @@ To run the hw1 dataset with ParGrid algorithm with 2 threads.
 
 ## Dataset
 
+We provide the download links for **all** datasets used in our paper.
+
 The datasets (H) Homo, (S) Sacchcere, (F) Fao, (I) Internet, (W) Wiki, (OI) ObamaInIsrael, (A) Amazon, (DL) DBLP-Large, (FG) FlickrGrowth, and (SO) StackOverflow are available at:
 
 https://drive.google.com/file/d/1msDDYSIC2sQODqrBjpa55yUIm15D2bda/view?usp=sharing
