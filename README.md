@@ -29,6 +29,8 @@ dataset(-d):
 - dblp-coauthor
 - flickr-growth
 - so
+- em
+- livejournal
 - hw1
 - hw2
 
@@ -41,6 +43,9 @@ method(-m):
 - ParGridPlus (ParGridPlus)
 - CoreIndex (Baseline)
 - ParCoreIndex (parallel version of CoreIndex Baseline)
+- GPU Algorithm ParGrid++
+  - cd into the ParGridGPU file.
+  - Follow the instructions in the `README` file to compile and run ParGridGPU.
 
 num of thread (-num_thread)
 
